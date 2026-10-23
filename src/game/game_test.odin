@@ -134,3 +134,19 @@ a_good_route_gets_four :: proc(t: ^testing.T) {
 	n := items_done(g)
 	testing.expect(t, n >= 3 && n <= 4, "route should land on 3 or 4 items")
 }
+
+@(test)
+sound_events_fire_once :: proc(t: ^testing.T) {
+	g := init()
+	stand_on(&g, .Dog)
+	done_events, meteor_events, epilogue_events := 0, 0, 0
+	for _ in 0 ..< 60 * 25 {
+		step(&g, {action = true}, 1.0 / 60)
+		if g.item_just_done { done_events += 1 }
+		if g.meteor_just_hit { meteor_events += 1 }
+		if g.epilogue_started { epilogue_events += 1 }
+	}
+	testing.expect_value(t, done_events, 1)
+	testing.expect_value(t, meteor_events, 1)
+	testing.expect_value(t, epilogue_events, 1)
+}

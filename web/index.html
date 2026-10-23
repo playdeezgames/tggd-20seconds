@@ -19,11 +19,41 @@
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   const css = (rgb) => "#" + (rgb >>> 0).toString(16).padStart(6, "0");
+  const atlas = new Image();
+  atlas.src = "art.png";
+  const SPRITE = 16;
+  // Order must match `Sound` in src/game/art.odin.
+  const SOUND_FILES = ["sfx/done.wav", "sfx/meteor.wav", "sfx/epilogue.wav"];
+  const sounds = [];
+  let audio = null;
+  const unlock = () => {
+    if (audio) return;
+    try {
+      audio = new (window.AudioContext || window.webkitAudioContext)();
+      SOUND_FILES.forEach((f, i) => fetch(f).then(r => r.arrayBuffer())
+        .then(b => audio.decodeAudioData(b)).then(buf => { sounds[i] = buf; }).catch(() => {}));
+    } catch (e) { audio = null; }
+  };
+  for (const ev of ["keydown", "pointerdown"]) window.addEventListener(ev, unlock, { once: false });
   const memory = new odin.WasmMemoryInterface();
   odin.runWasm("game.wasm", null, {
     canvas: {
       fill_rect: (x, y, w, h, rgb, alpha) => {
         ctx.globalAlpha = alpha; ctx.fillStyle = css(rgb); ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+      },
+      blit: (sprite, x, y, alpha) => {
+        ctx.globalAlpha = alpha;
+        ctx.drawImage(atlas, sprite * SPRITE, 0, SPRITE, SPRITE, Math.round(x), Math.round(y), SPRITE, SPRITE);
+        ctx.globalAlpha = 1;
+      },
+      play_sound: (id) => {
+        if (!audio || !sounds[id]) return;
+        const src = audio.createBufferSource();
+        src.buffer = sounds[id];
+        const gain = audio.createGain();
+        gain.gain.value = 0.3;
+        src.connect(gain).connect(audio.destination);
+        src.start();
       },
       draw_text: (x, y, ptr, len, rgb, size, centered) => {
         ctx.font = size + "px monospace";

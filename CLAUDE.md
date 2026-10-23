@@ -13,16 +13,13 @@ python3 -m http.server -d build/web 8000   # serve it; wasm cannot load from fil
 odin test src/game -collection:tggd=src -define:ODIN_TEST_THREADS=1 -define:ODIN_TEST_NAMES=game.run_ends_at_twenty_seconds   # a single test
 ```
 
+Assets: `assets/art/world.json` is an export of the Anvil world (source copy `~/anvil-worlds/nice-apocalypse.json`; sprites 16x16, 16-colour palette); `tools/gen_atlas.py` packs its sprites into `build/web/art.png` in sprite-set order, which must match `Sprite` in `src/game/art.odin`. Sound effects are PLAY-text sounds in the Anvil world exported to `assets/sfx/*.wav` (`sound_export`); `Sound` order must match `SOUND_FILES` in `web/index.html`. To change art or sound: edit in Anvil, re-export both, rebuild.
+
 Layout: `src/game` is the pure rules (`step(&game, input, dt)`, dt in seconds, no platform imports); `src/web` is `#+build js`, owns key input, `step` export and drawing through the `fill_rect` import; `web/index.html` holds the JS canvas shim and is copied by the build. Both packages are imported with `-collection:tggd=src`. Task tracking is in the Coxswain project `tggd-20seconds` (tools need `agent: "claude"`; register first).
 
 ## The project
 
-A game for the [20 Second Game Jam 2026](https://itch.io/jam/20-second-game-jam-2026) on itch.io (submissions October 23 to about November 17, 2026). Rules that shape design:
-
-- A play-through or level lasts **20 seconds or less** of gameplay; title, menus and cutscenes do not count but should be minimal or skippable. Multiple 20-second levels are allowed only if each is self-contained (nothing carries over). An endless mode is fine only if the default is the 20-second one.
-- A **free browser version hosted on itch.io** is required; a broken web build disqualifies. Other platforms are optional.
-- Optional themes: "The End of the World is Nice", "Double or Quits", "You Are What You Eat", "Out of Order". Use any, combine, or ignore.
-- Disclose generative AI use in the page's "AI generation disclosure" field; the jam wants human-made games. Mark mature content and flashing effects.
+"Nice Apocalypse", a 20-second browser game, to be shipped on itch.io as a regular release. It was begun for the [20 Second Game Jam 2026](https://itch.io/jam/20-second-game-jam-2026) but **the user decided not to enter the jam** (the jam wants human-made games), so the jam's deadline and rules no longer bind; the 20-second run is now simply the game's design. Finish it, then ship it, following the Release section below. State generative-AI use honestly on the itch page (the art and sound here were made through Anvil by Claude).
 
 ## Stack and tooling
 

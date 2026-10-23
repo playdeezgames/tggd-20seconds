@@ -11,6 +11,9 @@ foreign import canvas "canvas"
 foreign canvas {
 	// rgb is 0xRRGGBB; coordinates are logical pixels, y down.
 	fill_rect :: proc(x, y, w, h: f32, rgb: u32, alpha: f32) ---
+	// Draw a sprite from the atlas (build/web/art.png) with its top-left at x, y.
+	blit :: proc(sprite: i32, x, y: f32, alpha: f32) ---
+	play_sound :: proc(sound: i32) ---
 	// Placeholder text until the bitmap font lands; x is the centre when centered.
 	draw_text :: proc(x, y: f32, text: string, rgb: u32, size: f32, centered: bool) ---
 }
@@ -62,6 +65,9 @@ on_key_up :: proc(e: js.Event) {
 step :: proc(dt: f64, c: runtime.Context) -> bool {
 	context = runtime.default_context()
 	game.step(&state, held, dt)
+	if state.item_just_done { play_sound(i32(game.Sound.Done)) }
+	if state.meteor_just_hit { play_sound(i32(game.Sound.Meteor)) }
+	if state.epilogue_started { play_sound(i32(game.Sound.Epilogue)) }
 	draw()
 	free_all(context.temp_allocator)
 	return true
@@ -80,17 +86,16 @@ draw :: proc() {
 
 	for def, k in game.ITEM_DEFS {
 		done := state.done[k]
-		colour := done ? u32(0x566c86) : ITEM_COLORS[k]
-		fill_rect(def.x - 5, def.y - 5, 10, 10, colour, 1)
+		alpha := f32(done ? 0.35 : 1)
+		blit(i32(game.ITEM_SPRITES[k]), def.x - 8, def.y - 8, alpha)
 		draw_text(def.x, def.y + 16, def.name, done ? 0x566c86 : 0xf4f4f4, 7, true)
 		if p := state.progress[k]; p > 0 {
-			fill_rect(def.x - 8, def.y + 7, 16, 2, 0x333c57, 1)
-			fill_rect(def.x - 8, def.y + 7, 16 * p / def.hold, 2, 0x38b764, 1)
+			fill_rect(def.x - 8, def.y + 9, 16, 2, 0x333c57, 1)
+			fill_rect(def.x - 8, def.y + 9, 16 * p / def.hold, 2, 0x38b764, 1)
 		}
 	}
 
-	half := f32(game.PLAYER_SIZE) / 2
-	fill_rect(state.x - half, state.y - half, game.PLAYER_SIZE, game.PLAYER_SIZE, 0x73eff7, 1)
+	blit(i32(game.Sprite.Player), state.x - 8, state.y - 8, 1)
 
 	if state.phase == .Ended {
 		fill_rect(0, 0, game.SCREEN_W, game.SCREEN_H, 0xffffff, 1 - f32(state.after / game.FLASH_SECONDS))

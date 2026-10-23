@@ -55,6 +55,10 @@ Game :: struct {
 	x, y:     f32, // player centre
 	done:     [Item_Kind]bool,
 	progress: [Item_Kind]f32, // seconds held on the item being worked on
+	// One-step events for the platform layer (sound); cleared at the start of each step.
+	item_just_done:   bool,
+	meteor_just_hit:  bool,
+	epilogue_started: bool,
 }
 
 init :: proc() -> Game {
@@ -89,14 +93,18 @@ time_left :: proc(g: Game) -> f64 {
 
 // dt is in seconds. Only gameplay time counts toward the 20 seconds.
 step :: proc(g: ^Game, in_: Input, dt: f64) {
+	g.item_just_done, g.meteor_just_hit, g.epilogue_started = false, false, false
 	if g.phase != .Playing {
+		before := g.after
 		g.after += dt
+		g.epilogue_started = before < FLASH_SECONDS && g.after >= FLASH_SECONDS
 		return
 	}
 	g.clock += dt
 	if g.clock >= RUN_SECONDS {
 		g.clock = RUN_SECONDS
 		g.phase = .Ended
+		g.meteor_just_hit = true
 		return
 	}
 
@@ -126,6 +134,7 @@ step :: proc(g: ^Game, in_: Input, dt: f64) {
 		g.progress[target] += f32(dt)
 		if g.progress[target] >= ITEM_DEFS[target].hold {
 			g.done[target] = true
+			g.item_just_done = true
 			g.progress[target] = 0
 		}
 	}

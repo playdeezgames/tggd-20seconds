@@ -1,6 +1,6 @@
 # Nice Apocalypse: design
 
-Jam theme: "The End of the World is Nice". One run is 20 seconds; a meteor lands at 20.0 s.
+Theme: "The End of the World is Nice". One run is 20 seconds; a meteor lands at 20.0 s. (Started for the 20 Second Game Jam 2026; not entering the jam, so it ships as a normal itch.io release.)
 
 ## Decided
 
@@ -19,6 +19,6 @@ Jam theme: "The End of the World is Nice". One run is 20 seconds; a meteor lands
 
 ## Open
 
-- Whether 36 px/s feels right by hand; adjust `PLAYER_SPEED` (the tuning test will say if five become possible).
+- Walking speed of 36 px/s and the three sounds are confirmed by the user as good (October 23, 2026). `PLAYER_SPEED` is guarded by the tuning test.
 - Palette, sprite size and sound set.
 - Whether a second run changes anything (default: no; each run is self-contained).
