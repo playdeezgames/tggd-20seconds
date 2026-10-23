@@ -19,11 +19,20 @@
   const ctx = cv.getContext("2d");
   ctx.imageSmoothingEnabled = false;
   const css = (rgb) => "#" + (rgb >>> 0).toString(16).padStart(6, "0");
+  const memory = new odin.WasmMemoryInterface();
   odin.runWasm("game.wasm", null, {
     canvas: {
-      fill_rect: (x, y, w, h, rgb) => { ctx.fillStyle = css(rgb); ctx.fillRect(x, y, w, h); },
+      fill_rect: (x, y, w, h, rgb, alpha) => {
+        ctx.globalAlpha = alpha; ctx.fillStyle = css(rgb); ctx.fillRect(x, y, w, h); ctx.globalAlpha = 1;
+      },
+      draw_text: (x, y, ptr, len, rgb, size, centered) => {
+        ctx.font = size + "px monospace";
+        ctx.textAlign = centered ? "center" : "left";
+        ctx.fillStyle = css(rgb);
+        ctx.fillText(memory.loadString(ptr, len), x, y);
+      },
     },
-  });
+  }, memory);
 </script>
 </body>
 </html>
