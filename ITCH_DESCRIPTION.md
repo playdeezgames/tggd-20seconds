@@ -19,7 +19,7 @@ When the meteor lands, the screen goes soft and warm, and the game tells you how
 
 Every run is 20 seconds and nothing carries over.
 
-**Made with:** Odin, compiled to WebAssembly, drawing to a plain 2D canvas. The pixel art and the three sound effects were made with the Anvil of SPLORR!!, TheGrumpyGameDev's own asset tools. The game, the art and the sounds were made with Claude (generative AI) working alongside TheGrumpyGameDev.
+**Made with:** Odin, compiled to WebAssembly, drawing to a plain 2D canvas. The pixel art and the three sound effects were made with the Anvil of SPLORR!!, TheGrumpyGameDev's own asset tools. The text is the m5x7 pixel font by Daniel Linssen (managore). The game, the art and the sounds were made with Claude (generative AI) working alongside TheGrumpyGameDev.
 
 ## Notes (not for the page)
 

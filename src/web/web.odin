@@ -14,8 +14,8 @@ foreign canvas {
 	// Draw a sprite from the atlas (build/web/art.png) with its top-left at x, y.
 	blit :: proc(sprite: i32, x, y: f32, alpha: f32) ---
 	play_sound :: proc(sound: i32) ---
-	// Placeholder text until the bitmap font lands; x is the centre when centered.
-	draw_text :: proc(x, y: f32, text: string, rgb: u32, size: f32, centered: bool) ---
+	// Bitmap text (m5x7). y is the baseline; scale is a whole number; x is the centre when centered.
+	draw_text :: proc(x, y: f32, text: string, rgb: u32, scale: i32, centered: bool) ---
 }
 
 ITEM_COLORS := [game.Item_Kind]u32 {
@@ -144,13 +144,13 @@ draw :: proc() {
 	// Time bar: shrinks over the 20 seconds.
 	frac := f32(game.time_left(state) / game.RUN_SECONDS)
 	fill_rect(0, 0, game.SCREEN_W * frac, 4, 0xf4b41b, 1)
-	draw_text(4, 13, "Arrows/WASD: move   Hold Space/Z: do it", 0x94b0c2, 7, false)
+	draw_text(4, 14, "Arrows/WASD: move   Hold Space/Z: do it", 0x94b0c2, 1, false)
 
 	for def, k in game.ITEM_DEFS {
 		done := state.done[k]
 		alpha := f32(done ? 0.35 : 1)
 		blit(i32(game.ITEM_SPRITES[k]), def.x - 8, def.y - 8, alpha)
-		draw_text(def.x, def.y + 16, def.name, done ? 0x566c86 : 0xf4f4f4, 7, true)
+		draw_text(def.x, def.y + 18, def.name, done ? 0x566c86 : 0xf4f4f4, 1, true)
 		if p := state.progress[k]; p > 0 {
 			fill_rect(def.x - 8, def.y + 9, 16, 2, 0x333c57, 1)
 			fill_rect(def.x - 8, def.y + 9, 16 * p / def.hold, 2, 0x38b764, 1)
@@ -165,32 +165,35 @@ draw :: proc() {
 }
 
 draw_epilogue :: proc() {
-	draw_text(game.SCREEN_W / 2, 24, "The end of the world was nice.", 0xf4f4f4, 10, true)
-	y := f32(56)
+	cx := f32(game.SCREEN_W / 2)
+	draw_text(cx, 30, "The end of the", 0xf4f4f4, 2, true)
+	draw_text(cx, 50, "world was nice.", 0xf4f4f4, 2, true)
+	y := f32(80)
 	for def, k in game.ITEM_DEFS {
 		if state.done[k] {
-			draw_text(game.SCREEN_W / 2, y, def.epilogue, ITEM_COLORS[k], 7, true)
+			draw_text(cx, y, def.epilogue, ITEM_COLORS[k], 1, true)
 			y += 14
 		}
 	}
 	if game.items_done(state) == 0 {
-		draw_text(game.SCREEN_W / 2, y, "You watched it come, and that was nice too.", 0xf4f4f4, 7, true)
+		draw_text(cx, y, "You watched it come, and that was nice too.", 0xf4f4f4, 1, true)
 	}
-	draw_text(game.SCREEN_W / 2, 180, "R, or tap, to go again", 0x566c86, 7, true)
+	draw_text(cx, 180, "R, or tap, to go again", 0x94b0c2, 1, true)
 }
 
 draw_title :: proc() {
 	cx := f32(game.SCREEN_W / 2)
-	draw_text(cx, 38, "The End of the World", 0xf4f4f4, 14, true)
-	draw_text(cx, 56, "Was Nice", 0xffec27, 14, true)
-	draw_text(cx, 78, "You have 20 seconds.", 0xf4f4f4, 8, true)
-	draw_text(cx, 90, "Do what you can before the meteor lands.", 0x94b0c2, 7, true)
+	draw_text(cx, 32, "The End of", 0xf4f4f4, 3, true)
+	draw_text(cx, 56, "the World", 0xf4f4f4, 3, true)
+	draw_text(cx, 80, "Was Nice", 0xffec27, 3, true)
+	draw_text(cx, 98, "You have 20 seconds.", 0xf4f4f4, 1, true)
+	draw_text(cx, 110, "Do what you can before the meteor lands.", 0x94b0c2, 1, true)
 	// The cast, in a row.
 	sprites := [?]game.Sprite{.Player, .Hug, .Dog, .Cake, .Sky, .Call}
 	for sp, i in sprites {
-		blit(i32(sp), cx - 3 * game.SPRITE_SIZE + f32(i) * game.SPRITE_SIZE, 102, 1)
+		blit(i32(sp), cx - 3 * game.SPRITE_SIZE + f32(i) * game.SPRITE_SIZE, 120, 1)
 	}
-	draw_text(cx, 142, "Arrows / WASD: move", 0x94b0c2, 7, true)
-	draw_text(cx, 153, "Hold Space / Z next to something", 0x94b0c2, 7, true)
-	draw_text(cx, 178, "Press any key or tap to start", 0xf4b41b, 8, true)
+	draw_text(cx, 152, "Arrows / WASD: move", 0x94b0c2, 1, true)
+	draw_text(cx, 164, "Hold Space / Z next to something", 0x94b0c2, 1, true)
+	draw_text(cx, 184, "Press any key or tap to start", 0xf4b41b, 1, true)
 }
