@@ -1,4 +1,4 @@
-# Nice Apocalypse: design
+# The End of the World Was Nice: design
 
 Theme: "The End of the World is Nice". One run is 20 seconds; a meteor lands at 20.0 s. (Started for the 20 Second Game Jam 2026; not entering the jam, so it ships as a normal itch.io release.)
 

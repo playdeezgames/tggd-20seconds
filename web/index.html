@@ -3,16 +3,34 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Nice Apocalypse</title>
+<title>The End of the World Was Nice</title>
 <style>
   html, body { margin: 0; height: 100%; background: #000; }
   body { display: flex; align-items: center; justify-content: center; }
   canvas { image-rendering: pixelated; touch-action: none;
            width: min(100vw, calc(100vh * 240 / 192)); }
+  #pad { display: none; position: fixed; left: 0; right: 0; bottom: 0; padding: 12px;
+         justify-content: space-between; align-items: flex-end; pointer-events: none;
+         user-select: none; -webkit-user-select: none; }
+  body.touch #pad { display: flex; }
+  #pad button { pointer-events: auto; touch-action: none; font: bold 20px monospace; color: #f4f4f4;
+                background: rgba(244,244,244,.18); border: 2px solid rgba(244,244,244,.45);
+                border-radius: 12px; }
+  #pad button.on { background: rgba(244,180,27,.55); }
+  #dpad { display: grid; grid-template: repeat(3, 56px) / repeat(3, 56px); gap: 4px; }
+  #act { width: 96px; height: 96px; border-radius: 50% !important; }
 </style>
 </head>
 <body>
 <canvas id="screen" width="240" height="192"></canvas>
+<div id="pad">
+  <div id="dpad">
+    <span></span><button data-bit="4" aria-label="up">&#9650;</button><span></span>
+    <button data-bit="1" aria-label="left">&#9664;</button><span></span><button data-bit="2" aria-label="right">&#9654;</button>
+    <span></span><button data-bit="8" aria-label="down">&#9660;</button><span></span>
+  </div>
+  <button id="act" data-bit="16" aria-label="do it">DO IT</button>
+</div>
 <script type="text/javascript" src="odin.js"></script>
 <script>
   const cv = document.getElementById("screen");
@@ -36,6 +54,45 @@
   };
   for (const ev of ["keydown", "pointerdown"]) window.addEventListener(ev, unlock, { once: false });
   const memory = new odin.WasmMemoryInterface();
+
+  // Touch: on-screen buttons report a bit set to the game; a tap on the canvas starts and restarts.
+  let touchBits = 0;
+  const sendTouch = () => { if (memory.exports && memory.exports.set_touch) memory.exports.set_touch(touchBits); };
+  const showPad = () => document.body.classList.add("touch");
+  if (window.matchMedia && matchMedia("(pointer: coarse)").matches) showPad();
+  window.addEventListener("touchstart", showPad, { once: true, passive: true });
+  for (const b of document.querySelectorAll("#pad button")) {
+    const bit = Number(b.dataset.bit);
+    const set = (on) => {
+      touchBits = on ? (touchBits | bit) : (touchBits & ~bit);
+      b.classList.toggle("on", on);
+      sendTouch();
+    };
+    b.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      try { b.setPointerCapture(e.pointerId); } catch (err) {}
+      set(true);
+    });
+    for (const ev of ["pointerup", "pointercancel", "lostpointercapture"]) {
+      b.addEventListener(ev, () => set(false));
+    }
+  }
+  // QA: index.html#play skips the title; #play=12 also runs 12 seconds forward with no input
+  // (used by tools/make_shots.sh for screenshots).
+  const qa = /^#play(?:=([0-9.]+))?$/.exec(location.hash);
+  if (qa) {
+    const t = setInterval(() => {
+      const ex = memory.exports;
+      if (ex && ex.tap && ex.qa_advance) {
+        clearInterval(t);
+        ex.tap();
+        if (qa[1]) ex.qa_advance(Number(qa[1]));
+      }
+    }, 50);
+  }
+  cv.addEventListener("pointerdown", () => {
+    if (memory.exports && memory.exports.tap) memory.exports.tap();
+  });
   odin.runWasm("game.wasm", null, {
     canvas: {
       fill_rect: (x, y, w, h, rgb, alpha) => {

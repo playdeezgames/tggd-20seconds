@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## State of the repo
 
-The game is "Nice Apocalypse" (see `DESIGN.md` for decisions and open questions). A working skeleton exists: a player square moves on a 240x192 canvas while a 20-second bar drains, then the screen flashes white.
+The game is playable: a title screen, then 20 seconds on one 240x192 screen to walk to five bucket-list items and hold a button on each, a meteor flash, and an epilogue listing what got done. Keyboard and on-screen touch buttons both work. See `DESIGN.md` for decisions and open questions. Task status is in Coxswain.
 
 ```bash
 tools/test.sh                 # native tests of src/game + odin check of both packages for js_wasm32
@@ -19,7 +19,7 @@ Layout: `src/game` is the pure rules (`step(&game, input, dt)`, dt in seconds, n
 
 ## The project
 
-"Nice Apocalypse", a 20-second browser game, to be shipped on itch.io as a regular release. It was begun for the [20 Second Game Jam 2026](https://itch.io/jam/20-second-game-jam-2026) but **the user decided not to enter the jam** (the jam wants human-made games), so the jam's deadline and rules no longer bind; the 20-second run is now simply the game's design. Finish it, then ship it, following the Release section below. State generative-AI use honestly on the itch page (the art and sound here were made through Anvil by Claude).
+"The End of the World Was Nice", a 20-second browser game, to be shipped on itch.io as a regular release. It was begun for the [20 Second Game Jam 2026](https://itch.io/jam/20-second-game-jam-2026) but **the user decided not to enter the jam** (the jam wants human-made games), so the jam's deadline and rules no longer bind; the 20-second run is now simply the game's design. Finish it, then ship it, following the Release section below. State generative-AI use honestly on the itch page (the art and sound here were made through Anvil by Claude).
 
 ## Stack and tooling
 
@@ -45,4 +45,6 @@ Architecture the user's recent Odin games converge on (see `Turn Left at the Cow
 
 ## Release (itch.io)
 
-Follow the BOK's `Release standard`: `ITCH_DESCRIPTION.md` and `assets/cover.png` (630x500) at the repo root, screenshots in `assets/screenshots/`, `devlog/YYYYMMDD/`, `tools/build.sh`, `tools/test.sh`, `tools/ship.sh` plus a one-line `shippit.sh` wrapper that pushes only with `--push`. Never run `shippit.sh --push`, `butler push` or `git push` unless the user explicitly says so (if "push" is ambiguous, ask git or itch). New pages use channel `html`. The user sets the project kind and pastes the page copy by hand.
+Layout follows the BOK's `Release standard`: `ITCH_DESCRIPTION.md`, `assets/cover.png` (630x500, `tools/make_cover.py`, needs a built `build/web/art.png`), `assets/screenshots/` (`tools/make_shots.sh`, headless Chrome against the real build; it uses the `index.html#play=SECONDS` QA hook backed by the `qa_advance` export), `tools/ship.sh` with the one-line `shippit.sh` wrapper. The itch page is https://thegrumpygamedev.itch.io/the-end-of-the-world-was-nice and the target is `thegrumpygamedev/the-end-of-the-world-was-nice:html` (channel `html`).
+
+`tools/ship.sh` runs tests, builds with `-o:size` and zips `build/web`; it pushes to itch.io **only with `--push`**. Never run `shippit.sh --push`, `butler push` or `git push` unless the user explicitly says so (if "push" is ambiguous, ask git or itch). The user sets the project kind and pastes the page copy by hand.

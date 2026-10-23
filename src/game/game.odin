@@ -38,6 +38,7 @@ ITEM_DEFS := [Item_Kind]Item_Def {
 }
 
 Phase :: enum {
+	Title, // waiting for a key or tap; the 20-second clock has not started
 	Playing,
 	Ended, // the meteor has landed
 }
@@ -61,8 +62,37 @@ Game :: struct {
 	epilogue_started: bool,
 }
 
+// A fresh game already running; `title` is the one that waits for the player.
 init :: proc() -> Game {
 	return Game{phase = .Playing, x = SCREEN_W / 2, y = SCREEN_H / 2}
+}
+
+title :: proc() -> Game {
+	g := init()
+	g.phase = .Title
+	return g
+}
+
+// Leave the title screen and start the clock.
+begin :: proc(g: ^Game) {
+	if g.phase == .Title {
+		g.phase = .Playing
+	}
+}
+
+// The meteor's flash: a quick rise to a soft peak, then a fade. Never pure
+// white and never a single-frame jump, so it is not a strobe.
+FLASH_PEAK :: 0.6
+FLASH_RISE :: 0.25 // seconds
+
+flash_alpha :: proc(after: f64) -> f32 {
+	switch {
+	case after <= 0 || after >= FLASH_SECONDS:
+		return 0
+	case after < FLASH_RISE:
+		return FLASH_PEAK * f32(after / FLASH_RISE)
+	}
+	return FLASH_PEAK * f32((FLASH_SECONDS - after) / (FLASH_SECONDS - FLASH_RISE))
 }
 
 items_done :: proc(g: Game) -> (n: int) {
@@ -94,6 +124,9 @@ time_left :: proc(g: Game) -> f64 {
 // dt is in seconds. Only gameplay time counts toward the 20 seconds.
 step :: proc(g: ^Game, in_: Input, dt: f64) {
 	g.item_just_done, g.meteor_just_hit, g.epilogue_started = false, false, false
+	if g.phase == .Title {
+		return
+	}
 	if g.phase != .Playing {
 		before := g.after
 		g.after += dt

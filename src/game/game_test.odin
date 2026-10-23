@@ -150,3 +150,40 @@ sound_events_fire_once :: proc(t: ^testing.T) {
 	testing.expect_value(t, meteor_events, 1)
 	testing.expect_value(t, epilogue_events, 1)
 }
+
+@(test)
+title_does_not_run_the_clock :: proc(t: ^testing.T) {
+	g := title()
+	step(&g, {right = true, action = true}, 5)
+	testing.expect_value(t, g.phase, Phase.Title)
+	testing.expect_value(t, g.clock, 0)
+	begin(&g)
+	testing.expect_value(t, g.phase, Phase.Playing)
+	step(&g, {}, 1)
+	testing.expect_value(t, g.clock, 1)
+}
+
+@(test)
+begin_only_leaves_the_title :: proc(t: ^testing.T) {
+	g := init()
+	step(&g, {}, RUN_SECONDS + 1)
+	begin(&g)
+	testing.expect_value(t, g.phase, Phase.Ended)
+}
+
+@(test)
+flash_is_soft_and_smooth :: proc(t: ^testing.T) {
+	testing.expect_value(t, flash_alpha(0), 0)
+	testing.expect_value(t, flash_alpha(FLASH_SECONDS), 0)
+	peak, last: f32
+	biggest_jump: f32
+	for i in 0 ..= 150 {
+		a := flash_alpha(f64(i) / 100)
+		peak = max(peak, a)
+		biggest_jump = max(biggest_jump, abs(a - last))
+		last = a
+	}
+	testing.expect(t, peak <= FLASH_PEAK + 0.001 && peak > 0.5, "peak should be about 0.6")
+	// At 60 fps a step is 1/60 s; no step may change brightness by more than 0.15.
+	testing.expect(t, biggest_jump < 0.07, "flash must change gradually (0.01 s samples)")
+}

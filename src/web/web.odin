@@ -27,10 +27,11 @@ ITEM_COLORS := [game.Item_Kind]u32 {
 }
 
 state: game.Game
-held: game.Input
+held: game.Input  // keyboard
+touch: game.Input // on-screen buttons, set by the page through set_touch
 
 main :: proc() {
-	state = game.init()
+	state = game.title()
 	js.add_window_event_listener(.Key_Down, nil, on_key_down)
 	js.add_window_event_listener(.Key_Up, nil, on_key_up)
 }
@@ -48,12 +49,62 @@ set_key :: proc(code: string, down: bool) -> bool {
 	return true
 }
 
+// Title: any key or tap starts. After the epilogue: a tap or a key plays again.
+start_or_restart :: proc() {
+	switch state.phase {
+	case .Title:
+		game.begin(&state)
+	case .Ended:
+		if state.after >= game.FLASH_SECONDS {
+			state = game.init()
+		}
+	case .Playing:
+	}
+}
+
 on_key_down :: proc(e: js.Event) {
 	if set_key(e.key.code, true) {
 		js.event_prevent_default()
 	}
-	if e.key.code == "KeyR" && state.phase == .Ended {
-		state = game.init()
+	if e.key.repeat {
+		return
+	}
+	switch e.key.code {
+	case "ShiftLeft", "ShiftRight", "ControlLeft", "ControlRight", "AltLeft", "AltRight", "MetaLeft", "MetaRight":
+		return // modifiers alone do not count as "any key"
+	}
+	start_or_restart()
+}
+
+// Called by the page on a tap of the canvas.
+@(export)
+tap :: proc "c" () {
+	context = runtime.default_context()
+	start_or_restart()
+}
+
+// QA hook for screenshots (index.html#play=SECONDS): run the game forward with no input.
+@(export)
+qa_advance :: proc "c" (seconds: f64) {
+	context = runtime.default_context()
+	for left := seconds; left > 0; left -= 0.05 {
+		game.step(&state, {}, min(left, 0.05))
+	}
+}
+
+// Called by the page whenever the on-screen buttons change. Bits: 1 left, 2 right, 4 up, 8 down, 16 action.
+@(export)
+set_touch :: proc "c" (bits: i32) {
+	context = runtime.default_context()
+	touch = {
+		left   = bits & 1 != 0,
+		right  = bits & 2 != 0,
+		up     = bits & 4 != 0,
+		down   = bits & 8 != 0,
+		action = bits & 16 != 0,
+	}
+	if bits != 0 {
+		start_or_restart()
 	}
 }
 
@@ -64,7 +115,14 @@ on_key_up :: proc(e: js.Event) {
 @(export)
 step :: proc(dt: f64, c: runtime.Context) -> bool {
 	context = runtime.default_context()
-	game.step(&state, held, dt)
+	merged := game.Input {
+		left   = held.left || touch.left,
+		right  = held.right || touch.right,
+		up     = held.up || touch.up,
+		down   = held.down || touch.down,
+		action = held.action || touch.action,
+	}
+	game.step(&state, merged, dt)
 	if state.item_just_done { play_sound(i32(game.Sound.Done)) }
 	if state.meteor_just_hit { play_sound(i32(game.Sound.Meteor)) }
 	if state.epilogue_started { play_sound(i32(game.Sound.Epilogue)) }
@@ -75,6 +133,10 @@ step :: proc(dt: f64, c: runtime.Context) -> bool {
 
 draw :: proc() {
 	fill_rect(0, 0, game.SCREEN_W, game.SCREEN_H, 0x1a1c2c, 1)
+	if state.phase == .Title {
+		draw_title()
+		return
+	}
 	if state.phase == .Ended && state.after >= game.FLASH_SECONDS {
 		draw_epilogue()
 		return
@@ -98,7 +160,7 @@ draw :: proc() {
 	blit(i32(game.Sprite.Player), state.x - 8, state.y - 8, 1)
 
 	if state.phase == .Ended {
-		fill_rect(0, 0, game.SCREEN_W, game.SCREEN_H, 0xffffff, 1 - f32(state.after / game.FLASH_SECONDS))
+		fill_rect(0, 0, game.SCREEN_W, game.SCREEN_H, 0xfff1e8, game.flash_alpha(state.after))
 	}
 }
 
@@ -114,5 +176,21 @@ draw_epilogue :: proc() {
 	if game.items_done(state) == 0 {
 		draw_text(game.SCREEN_W / 2, y, "You watched it come, and that was nice too.", 0xf4f4f4, 7, true)
 	}
-	draw_text(game.SCREEN_W / 2, 180, "R to go again", 0x566c86, 7, true)
+	draw_text(game.SCREEN_W / 2, 180, "R, or tap, to go again", 0x566c86, 7, true)
+}
+
+draw_title :: proc() {
+	cx := f32(game.SCREEN_W / 2)
+	draw_text(cx, 38, "The End of the World", 0xf4f4f4, 14, true)
+	draw_text(cx, 56, "Was Nice", 0xffec27, 14, true)
+	draw_text(cx, 78, "You have 20 seconds.", 0xf4f4f4, 8, true)
+	draw_text(cx, 90, "Do what you can before the meteor lands.", 0x94b0c2, 7, true)
+	// The cast, in a row.
+	sprites := [?]game.Sprite{.Player, .Hug, .Dog, .Cake, .Sky, .Call}
+	for sp, i in sprites {
+		blit(i32(sp), cx - 3 * game.SPRITE_SIZE + f32(i) * game.SPRITE_SIZE, 102, 1)
+	}
+	draw_text(cx, 142, "Arrows / WASD: move", 0x94b0c2, 7, true)
+	draw_text(cx, 153, "Hold Space / Z next to something", 0x94b0c2, 7, true)
+	draw_text(cx, 178, "Press any key or tap to start", 0xf4b41b, 8, true)
 }
