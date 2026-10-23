@@ -111,7 +111,19 @@
   // Touch: on-screen buttons report a bit set to the game; a tap on the canvas starts and restarts.
   let touchBits = 0;
   const sendTouch = () => { if (memory.exports && memory.exports.set_touch) memory.exports.set_touch(touchBits); };
-  const showPad = () => document.body.classList.add("touch");
+  let padShown = false;
+  // Tell the game the buttons are showing (so its hints name them); retried until the wasm exports exist.
+  const syncTouchUi = () => {
+    if (!padShown) return true;
+    const ex = memory.exports;
+    if (ex && ex.set_touch_ui) { ex.set_touch_ui(1); return true; }
+    return false;
+  };
+  const showPad = () => {
+    document.body.classList.add("touch");
+    padShown = true;
+    if (!syncTouchUi()) { const t = setInterval(() => { if (syncTouchUi()) clearInterval(t); }, 50); }
+  };
   if (window.matchMedia && matchMedia("(pointer: coarse)").matches) showPad();
   window.addEventListener("touchstart", showPad, { once: true, passive: true });
   for (const b of document.querySelectorAll("#pad button")) {

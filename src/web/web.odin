@@ -29,6 +29,7 @@ ITEM_COLORS := [game.Item_Kind]u32 {
 state: game.Game
 held: game.Input  // keyboard
 touch: game.Input // on-screen buttons, set by the page through set_touch
+touch_ui: bool    // the page is showing the on-screen buttons, so hints name them
 
 main :: proc() {
 	state = game.title()
@@ -92,6 +93,12 @@ qa_advance :: proc "c" (seconds: f64) {
 	}
 }
 
+// Called by the page when it shows (1) the on-screen buttons, so hints talk about them.
+@(export)
+set_touch_ui :: proc "c" (on: i32) {
+	touch_ui = on != 0
+}
+
 // Called by the page whenever the on-screen buttons change. Bits: 1 left, 2 right, 4 up, 8 down, 16 action.
 @(export)
 set_touch :: proc "c" (bits: i32) {
@@ -144,7 +151,8 @@ draw :: proc() {
 	// Time bar: shrinks over the 20 seconds.
 	frac := f32(game.time_left(state) / game.RUN_SECONDS)
 	fill_rect(0, 0, game.SCREEN_W * frac, 4, 0xf4b41b, 1)
-	draw_text(4, 14, "Arrows/WASD: move   Hold Space/Z: do it", 0x94b0c2, 1, false)
+	hint := touch_ui ? "D-pad: move   Hold DO IT: do it" : "Arrows/WASD: move   Hold Space/Z: do it"
+	draw_text(4, 14, hint, 0x94b0c2, 1, false)
 
 	for def, k in game.ITEM_DEFS {
 		done := state.done[k]
@@ -178,7 +186,7 @@ draw_epilogue :: proc() {
 	if game.items_done(state) == 0 {
 		draw_text(cx, y, "You watched it come, and that was nice too.", 0xf4f4f4, 1, true)
 	}
-	draw_text(cx, 180, "R, or tap, to go again", 0x94b0c2, 1, true)
+	draw_text(cx, 180, touch_ui ? "Tap to go again" : "R, or tap, to go again", 0x94b0c2, 1, true)
 }
 
 draw_title :: proc() {
@@ -193,7 +201,13 @@ draw_title :: proc() {
 	for sp, i in sprites {
 		blit(i32(sp), cx - 3 * game.SPRITE_SIZE + f32(i) * game.SPRITE_SIZE, 120, 1)
 	}
-	draw_text(cx, 152, "Arrows / WASD: move", 0x94b0c2, 1, true)
-	draw_text(cx, 164, "Hold Space / Z next to something", 0x94b0c2, 1, true)
-	draw_text(cx, 184, "Press any key or tap to start", 0xf4b41b, 1, true)
+	if touch_ui {
+		draw_text(cx, 152, "D-pad: move", 0x94b0c2, 1, true)
+		draw_text(cx, 164, "Hold DO IT next to something", 0x94b0c2, 1, true)
+		draw_text(cx, 184, "Tap to start", 0xf4b41b, 1, true)
+	} else {
+		draw_text(cx, 152, "Arrows / WASD: move", 0x94b0c2, 1, true)
+		draw_text(cx, 164, "Hold Space / Z next to something", 0x94b0c2, 1, true)
+		draw_text(cx, 184, "Press any key or tap to start", 0xf4b41b, 1, true)
+	}
 }
