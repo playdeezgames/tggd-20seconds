@@ -9,6 +9,8 @@ A meteor lands in 20 seconds. Pet the dog, hug someone, eat the cake: do what yo
 
 ## Paste this as the page description
 
+**Latest version:** https://playdeezgames.github.io/tggd-20seconds/
+
 The end of the world is nice.
 
 A meteor is coming, and it lands in exactly 20 seconds. You have a little bucket list: **hug someone, pet the dog, eat the cake, watch the sky, call mum.** Walk to each one and hold the button until it is done. You will not get to all five, so choose.
